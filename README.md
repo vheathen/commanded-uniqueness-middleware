@@ -1,21 +1,19 @@
 # Commanded.Middleware.Uniqueness
 
-**TODO: Add description**
+A [Commanded](https://github.com/commanded/commanded) [middleware](https://hexdocs.pm/commanded/commands.html#middleware) for checking certain values uniqueness during commands dispatch. Might be useful as a short-term unique values cache before subsequent events persisted and projected.
+
+Based on the [Ben Smith](https://github.com/slashdotdash)'s idea described in his "Building Conduit" [book](https://leanpub.com/buildingconduit).
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `commanded_uniqueness_middleware` to your list of dependencies in `mix.exs`:
+As it still in alpha stage you can use it by adding `commanded_uniqueness_middleware` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:commanded_uniqueness_middleware, "~> 0.5.0"}
+    {:commanded_uniqueness_middleware, github: "vheathen/commanded-uniqueness-middleware"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/commanded_uniqueness_middleware](https://hexdocs.pm/commanded_uniqueness_middleware).
-
+Documentation going to be available ASAP.
