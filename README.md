@@ -10,7 +10,7 @@ by adding `commanded_uniqueness_middleware` to your list of dependencies in `mix
 ```elixir
 def deps do
   [
-    {:commanded_uniqueness_middleware, "~> 0.1.0"}
+    {:commanded_uniqueness_middleware, "~> 0.5.0"}
   ]
 end
 ```

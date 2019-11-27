@@ -6,10 +6,7 @@ defmodule Commanded.Middleware.Uniqueness.Supervisor do
   use Application
 
   def start(_type, _args) do
-    children = [
-      # Starts a worker by calling: Commanded.Middleware.Uniqueness.Worker.start_link(arg)
-      # {Commanded.Middleware.Uniqueness.Worker, arg}
-    ]
+    children = Commanded.Middleware.Uniqueness.Adapter.inject_child_spec([])
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
