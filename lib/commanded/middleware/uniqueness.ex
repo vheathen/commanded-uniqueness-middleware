@@ -15,6 +15,7 @@ defmodule Commanded.Middleware.Uniqueness do
     fields are downcased before comparison
     `:label` - use this atom as error label
     `:is_unique` - `(term, String.t(), term, keyword() -> boolean())`
+    `:partition` - use to set custom partition name
     """
     def unique(command)
   end

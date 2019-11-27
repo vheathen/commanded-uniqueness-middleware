@@ -7,7 +7,8 @@ defmodule Commanded.Middleware.Uniqueness.Adapter do
     config :commanded_uniqueness_middleware,
       adapter: Commanded.Middleware.Uniqueness.Adapter.Cachex,
       # ttl: 60 minutes in seconds
-      ttl: 60 * 60
+      ttl: 60 * 60,
+      default_partition: :command
   """
 
   @doc """
@@ -16,18 +17,32 @@ defmodule Commanded.Middleware.Uniqueness.Adapter do
   @callback child_spec() :: Supervisor.child_spec()
 
   @doc """
-  Claims a {id, value, owner} or report that this combination has already been claimed.
+  Claims an {id, value, owner, partition} or report that this combination has already been claimed.
 
-  If a {id, new_value, owner} has to be claimed and old value exists it
+  If an {id, new_value, owner, partition} has to be claimed and old value for the owner exists it
    releases first.
   """
   @callback claim(id :: term, value :: term, owner :: term, partition :: term) ::
               :ok | {:error, :already_exists} | {:error, :unknown_error}
+
+  @doc """
+  Releases a value record via {id, value, owner, partition}
+  """
   @callback release(id :: term, value :: term, owner :: term, partition :: term) ::
               :ok | {:error, :claimed_by_another_owner} | {:error, :unknown_error}
+
+  @doc """
+  Releases a value record via {id, owner, partition}
+  """
   @callback release(id :: term, owner :: term, partition :: term) ::
               :ok | {:error, :unknown_error}
 
+  @spec get :: :atom | nil
+  def get do
+    adapter()
+  end
+
+  @doc false
   @spec child_spec :: Supervisor.child_spec() | nil
   def child_spec do
     case adapter() do
@@ -36,6 +51,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter do
     end
   end
 
+  @doc false
   @spec inject_child_spec(children :: list(), opts :: [at: integer() | atom()]) ::
           list(Supervisor.child_spec())
   def inject_child_spec(children, opts \\ []) when is_list(children) do
@@ -47,11 +63,6 @@ defmodule Commanded.Middleware.Uniqueness.Adapter do
         index = get_position(opts)
         List.insert_at(children, index, child)
     end
-  end
-
-  @spec get :: :atom | nil
-  def get do
-    adapter()
   end
 
   @positions [

@@ -17,3 +17,5 @@ end
 ```
 
 Documentation going to be available ASAP.
+
+As of now you can check modules documentation and tests to get to know behavior.
