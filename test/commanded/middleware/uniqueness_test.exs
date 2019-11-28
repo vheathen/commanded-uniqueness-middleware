@@ -136,7 +136,7 @@ defmodule Commanded.Middleware.UniquenessTest do
       assert Cachex.get!(
                @cachex_adapter,
                {Commanded.Middleware.Uniqueness, @by_value_key, :name, "ExternallyTakenName"}
-             ) == 2
+             ) == nil
 
       assert Cachex.get!(
                @cachex_adapter,

@@ -117,8 +117,12 @@ defmodule Commanded.Middleware.Uniqueness do
     case adapter.claim(field_name, value, owner, partition) do
       :ok ->
         case external_check(field_name, value, owner, command, opts) do
-          true -> {field_name, value, owner, partition}
-          _ -> {:error, :external_check_failed}
+          true ->
+            {field_name, value, owner, partition}
+
+          _ ->
+            adapter.release(field_name, value, owner, partition)
+            {:error, :external_check_failed}
         end
 
       error ->
