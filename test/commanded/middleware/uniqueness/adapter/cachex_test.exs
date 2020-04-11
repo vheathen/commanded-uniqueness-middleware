@@ -38,14 +38,14 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
       Cachex.clear(@cachex_adapter)
     end)
 
-    id = :field_name
+    key = :field_name
     value = Faker.Lorem.sentence()
     owner = UUID.uuid4()
     partition = Faker.String.base64()
 
-    assert :ok == @cachex_adapter.claim(id, value, owner, partition)
+    assert :ok == @cachex_adapter.claim(key, value, owner, partition)
 
-    [id: id, value: value, owner: owner, partition: partition]
+    [key: key, value: value, owner: owner, partition: partition]
   end
 
   describe "child_spec/0" do
@@ -61,33 +61,33 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
   end
 
   describe "claim/4" do
-    test "should return :ok and put into cache owner under {@by_value_key, @partition, id, value} key and value under {partition, @by_owner_key, id, owner} key if no {id, value} key exists",
+    test "should return :ok and put into cache owner under {@by_value_key, @partition, key, value} key and value under {partition, @by_owner_key, key, owner} key if no {key, value} key exists",
          %{
-           id: id,
+           key: key,
            value: value,
            owner: owner,
            partition: partition
          } do
-      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
     end
 
-    test "should return :ok if {id, value} key exists and has owner as a value",
+    test "should return :ok if {key, value} key exists and has owner as a value",
          %{
-           id: id,
+           key: key,
            value: value,
            owner: owner,
            partition: partition
          } do
-      assert :ok == @cachex_adapter.claim(id, value, owner, partition)
+      assert :ok == @cachex_adapter.claim(key, value, owner, partition)
 
-      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
     end
 
-    test "should return {:error, :already_exists} if {id, value} key exists but has a different than owner value",
+    test "should return {:error, :already_exists} if {key, value} key exists but has a different than owner value",
          %{
-           id: id,
+           key: key,
            value: value,
            owner: owner,
            partition: partition
@@ -95,63 +95,94 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
       other = UUID.uuid4()
 
       assert {:error, :already_exists} ==
-               @cachex_adapter.claim(id, value, other, partition)
+               @cachex_adapter.claim(key, value, other, partition)
 
-      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
 
-      refute other == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, other})
+      refute other == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, other})
     end
 
-    test "should release an old {id, value} key if the same owner claims a new value for the same id",
+    test "should release an old {key, value} key if the same owner claims a new value for the same key",
          %{
-           id: id,
+           key: key,
            value: value,
            owner: owner,
            partition: partition
          } do
       new_value = Faker.Lorem.sentence()
 
-      assert :ok == @cachex_adapter.claim(id, new_value, owner, partition)
+      assert :ok == @cachex_adapter.claim(key, new_value, owner, partition)
 
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, new_value})
-      assert new_value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, new_value})
+      assert new_value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
+    end
+  end
+
+  describe "claim/3" do
+    setup %{
+      key: key,
+      value: value,
+      owner: owner,
+      partition: partition
+    } do
+      @cachex_adapter.release(key, value, owner, partition)
+      @cachex_adapter.claim(key, value, partition)
+    end
+
+    test "should return :ok and create a cache record under {@by_value_key, @partition, key, value} key",
+         %{
+           key: key,
+           value: value,
+           partition: partition
+         } do
+      assert {:ok, true} ==
+               Cachex.exists?(@cachex_adapter, {partition, @by_value_key, key, value})
+    end
+
+    test "should return {:error, :already_exists} if {key, value} key exists",
+         %{
+           key: key,
+           value: value,
+           partition: partition
+         } do
+      assert {:error, :already_exists} == @cachex_adapter.claim(key, value, partition)
     end
   end
 
   describe "release/4" do
-    test "should return :ok and delete {id, owner} and {id, value} if they exist",
+    test "should return :ok and delete {key, owner} and {key, value} if they exist",
          %{
-           id: id,
+           key: key,
            value: value,
            owner: owner,
            partition: partition
          } do
-      assert :ok == @cachex_adapter.release(id, value, owner, partition)
+      assert :ok == @cachex_adapter.release(key, value, owner, partition)
 
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
     end
 
     test "should return :ok if no given value exists", %{partition: partition} do
-      id = :other_field_name
+      key = :other_field_name
       value = Faker.Lorem.sentence()
       owner = UUID.uuid4()
 
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
 
-      assert :ok == @cachex_adapter.release(id, value, owner, partition)
+      assert :ok == @cachex_adapter.release(key, value, owner, partition)
 
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
     end
 
     test "should return {:error, :claimed_by_another_owner} if claimed with another owner",
          %{
-           id: id,
+           key: key,
            value: value,
            owner: owner,
            partition: partition
@@ -159,36 +190,76 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
       other = UUID.uuid4()
 
       assert {:error, :claimed_by_another_owner} ==
-               @cachex_adapter.release(id, value, other, partition)
+               @cachex_adapter.release(key, value, other, partition)
 
-      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert owner == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert value == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
     end
   end
 
-  describe "release/3" do
-    test "should return :ok and delete {id, owner} and {id, value} if they are exists",
+  describe "release_by_owner/3" do
+    test "should return :ok and delete {key, owner} and {key, value} if they are exists",
          %{
-           id: id,
+           key: key,
            value: value,
            owner: owner,
            partition: partition
          } do
-      assert :ok == @cachex_adapter.release(id, owner, partition)
+      assert :ok == @cachex_adapter.release_by_owner(key, owner, partition)
 
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, id, value})
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
     end
 
     test "should return :ok if no given value exists", %{partition: partition} do
-      id = :other_field_name
+      key = :other_field_name
       owner = UUID.uuid4()
 
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
 
-      assert :ok == @cachex_adapter.release(id, owner, partition)
+      assert :ok == @cachex_adapter.release_by_owner(key, owner, partition)
 
-      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, id, owner})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
+    end
+  end
+
+  describe "release_by_value/3" do
+    test "should return :ok and delete {key, value} if they are exists",
+         %{
+           key: key,
+           value: value,
+           owner: owner,
+           partition: partition
+         } do
+      assert :ok == @cachex_adapter.release(key, value, owner, partition)
+
+      assert :ok = @cachex_adapter.claim(key, value, partition)
+
+      assert :ok == @cachex_adapter.release_by_value(key, value, partition)
+
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+    end
+
+    test "should return :ok and delete {key, owner} and {key, value} if they are exists and where claimed by claim/4",
+         %{
+           key: key,
+           value: value,
+           owner: owner,
+           partition: partition
+         } do
+      assert :ok == @cachex_adapter.release_by_value(key, value, partition)
+
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
+    end
+
+    test "should return :ok if no given value claimed", %{partition: partition} do
+      key = :other_field_name
+      value = UUID.uuid4()
+
+      assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
+
+      assert :ok == @cachex_adapter.release_by_value(key, value, partition)
     end
   end
 end

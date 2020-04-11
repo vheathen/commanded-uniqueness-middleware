@@ -33,6 +33,14 @@ defmodule Commanded.Middleware.UniquenessTest do
     end)
   end
 
+  describe "default_partition/0" do
+    @describetag :unit
+
+    test "should return current default partition" do
+      assert Commanded.Middleware.Uniqueness == Uniqueness.default_partition()
+    end
+  end
+
   describe "Uniqueness middleware, TestCommandSimple should" do
     @describetag :unit
 
@@ -403,10 +411,10 @@ defmodule Commanded.Middleware.UniquenessTest do
     setup do
       app_settings = Application.get_all_env(:commanded_uniqueness_middleware)
 
-      Application.put_env(:commanded_uniqueness_middleware, :default_partition, :command)
+      Application.put_env(:commanded_uniqueness_middleware, :use_command_as_partition, true)
 
       on_exit(fn ->
-        Application.delete_env(:commanded_uniqueness_middleware, :default_partition)
+        Application.delete_env(:commanded_uniqueness_middleware, :use_command_as_partition)
         Application.put_all_env(commanded_uniqueness_middleware: app_settings)
       end)
     end
@@ -443,6 +451,78 @@ defmodule Commanded.Middleware.UniquenessTest do
                Uniqueness.before_dispatch(%Pipeline{command: cmd})
 
       assert response == {:error, :validation_failure, [{:name, "has already been taken"}]}
+    end
+  end
+
+  describe "Uniqueness middleware, TestCommandSimpleNoOwner with random owner should" do
+    @describetag :unit
+
+    test "continue if field value unique" do
+      cmd = %TestCommandSimpleNoOwner{id: 1, name: "NewName"}
+      assert %Pipeline{halted: false} = Uniqueness.before_dispatch(%Pipeline{command: cmd})
+
+      cmd = %TestCommandSimpleNoOwner{id: 2, name: "NewName2"}
+      assert %Pipeline{halted: false} = Uniqueness.before_dispatch(%Pipeline{command: cmd})
+    end
+
+    test "continue if field value in in another case" do
+      cmd = %TestCommandSimpleNoOwner{id: 1, name: "NewName"}
+      assert %Pipeline{halted: false} = Uniqueness.before_dispatch(%Pipeline{command: cmd})
+
+      #
+      cmd = %TestCommandSimpleNoOwner{id: 2, name: "newnaME"}
+      assert %Pipeline{halted: false} = Uniqueness.before_dispatch(%Pipeline{command: cmd})
+    end
+
+    test "should halt if field value not unique" do
+      cmd = %TestCommandSimpleNoOwner{id: 1, name: "NewName"}
+
+      assert %Pipeline{halted: false, response: nil} =
+               Uniqueness.before_dispatch(%Pipeline{command: cmd})
+
+      #
+      cmd = %TestCommandSimpleNoOwner{id: 2, name: "NewName"}
+
+      assert %Pipeline{halted: true, response: response} =
+               Uniqueness.before_dispatch(%Pipeline{command: cmd})
+
+      assert response == {:error, :validation_failure, [{:name, "has already been taken"}]}
+    end
+  end
+
+  describe "Uniqueness middleware, TestCommandSimpleNoOwnerBad should" do
+    @describetag :unit
+
+    test "raise error because of no_owner can only be false or true" do
+      assert_raise ArgumentError, fn ->
+        cmd = %TestCommandSimpleNoOwnerBad{id: 1, name: "NewName"}
+        Uniqueness.before_dispatch(%Pipeline{command: cmd})
+      end
+
+      assert_raise ArgumentError, fn ->
+        cmd = %TestCommandSimpleNoOwnerBad{id: 2, name: "NewName2"}
+        Uniqueness.before_dispatch(%Pipeline{command: cmd})
+      end
+    end
+  end
+
+  describe "Uniqueness middleware, TestCommandSimpleLabelNoOwner should" do
+    @describetag :unit
+
+    test "should halt if field value not unique with custom label" do
+      cmd = %TestCommandSimpleLabelNoOwner{id: 1, name: "NewName"}
+
+      assert %Pipeline{halted: false, response: nil} =
+               Uniqueness.before_dispatch(%Pipeline{command: cmd})
+
+      #
+      cmd = %TestCommandSimpleLabelNoOwner{id: 2, name: "NewName"}
+
+      assert %Pipeline{halted: true, response: response} =
+               Uniqueness.before_dispatch(%Pipeline{command: cmd})
+
+      assert response ==
+               {:error, :validation_failure, [{:another_label, "has already been taken"}]}
     end
   end
 end

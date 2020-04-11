@@ -3,19 +3,25 @@ defmodule Commanded.Middleware.Uniqueness do
 
   @moduledoc """
   Documentation for Commanded.Middleware.Uniqueness.
+
+
   """
+
+  @default_partition __MODULE__
 
   defprotocol UniqueFields do
     @fallback_to_any true
     @doc """
-    Returns unique fields for the command as a list of
-    tuples as: `{field_name :: atom() | list(atom), error_message :: String.t(), owner :: term, opts :: keyword()}`,
+    Returns unique fields for a command as a list of tuples as:
+    `{field_name :: atom() | list(atom), error_message :: String.t(), owner :: term, opts :: keyword()}`,
     where `opts` might contain none, one or multiple options:
     `ignore_case: true` or `ignore_case: [:email, :username]` for multi-fields entities - binary-based
     fields are downcased before comparison
     `:label` - use this atom as error label
     `:is_unique` - `(term, String.t(), term, keyword() -> boolean())`
     `:partition` - use to set custom partition name
+    `:no_owner` - if true then ignore owner and check `field_name` - `field_value` pair uniqueness
+    in a `partition` scope. `release_by_value/3` must be used to release key-value pair in such case.
     """
     def unique(command)
   end
@@ -27,6 +33,13 @@ defmodule Commanded.Middleware.Uniqueness do
   alias Commanded.Middleware.Pipeline
 
   import Pipeline
+
+  @doc """
+  Returns default parition which is by default @Commanded.Middleware.Uniqueness
+  """
+  def default_partition do
+    @default_partition
+  end
 
   def before_dispatch(%Pipeline{command: command} = pipeline) do
     case ensure_uniqueness(command) do
@@ -69,8 +82,8 @@ defmodule Commanded.Middleware.Uniqueness do
 
     {errors, to_release} =
       case claim(record, command, adapter) do
-        {id, value, owner, partition} ->
-          to_release = [{id, value, owner, partition} | to_release]
+        {key, value, owner, partition} ->
+          to_release = [{key, value, owner, partition} | to_release]
 
           {errors, to_release}
 
@@ -110,11 +123,26 @@ defmodule Commanded.Middleware.Uniqueness do
 
   defp claim({field_name, _, owner, opts}, command, adapter)
        when is_atom(field_name) do
-    ignore_case? = Keyword.get(opts, :ignore_case)
-    value = get_field_value(command, field_name, ignore_case?)
+    ignore_case = Keyword.get(opts, :ignore_case)
+    value = get_field_value(command, field_name, ignore_case)
     partition = get_partition(opts, command)
 
-    case adapter.claim(field_name, value, owner, partition) do
+    require Logger
+
+    claim_result =
+      case Keyword.get(opts, :no_owner, false) do
+        false ->
+          adapter.claim(field_name, value, owner, partition)
+
+        true ->
+          adapter.claim(field_name, value, partition)
+
+        _ ->
+          raise ArgumentError,
+                "Commanded.Middleware.Uniqueness.UniqueFields :no_owner option can only be either true or false"
+      end
+
+    case claim_result do
       :ok ->
         case external_check(field_name, value, owner, command, opts) do
           true ->
@@ -130,8 +158,8 @@ defmodule Commanded.Middleware.Uniqueness do
     end
   end
 
-  defp release({id, value, owner, partition}, adapter),
-    do: adapter.release(id, value, owner, partition)
+  defp release({key, value, owner, partition}, adapter),
+    do: adapter.release(key, value, owner, partition)
 
   defp external_check(field_name, value, owner, command, opts) when is_list(opts),
     do: external_check(field_name, value, owner, command, get_external_checker(opts))
@@ -171,13 +199,13 @@ defmodule Commanded.Middleware.Uniqueness do
 
   defp get_external_checker(opts), do: {Keyword.get(opts, :is_unique), opts}
 
-  defp get_partition(opts, command), do: get_partition(opts, command, get_default_partition())
+  defp get_partition(opts, command), do: get_partition(opts, command, use_command_as_partition?())
 
-  defp get_partition(opts, %command{}, :command), do: Keyword.get(opts, :partition, command)
-  defp get_partition(opts, _, _), do: Keyword.get(opts, :partition, __MODULE__)
+  defp get_partition(opts, %command{}, true), do: Keyword.get(opts, :partition, command)
+  defp get_partition(opts, _, _), do: Keyword.get(opts, :partition, default_partition())
 
   defp get_adapter, do: Application.get_env(:commanded_uniqueness_middleware, :adapter)
 
-  defp get_default_partition,
-    do: Application.get_env(:commanded_uniqueness_middleware, :default_partition)
+  defp use_command_as_partition?,
+    do: Application.get_env(:commanded_uniqueness_middleware, :use_command_as_partition)
 end

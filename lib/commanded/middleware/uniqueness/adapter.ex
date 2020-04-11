@@ -1,6 +1,6 @@
 defmodule Commanded.Middleware.Uniqueness.Adapter do
   @moduledoc """
-  Module intended to provide API behaviour to ensure a short-term value uniqueness.
+  Module intended to provide API behaviour to ensure short-term value uniqueness.
 
   Define options in config/config.exs as:
 
@@ -8,7 +8,13 @@ defmodule Commanded.Middleware.Uniqueness.Adapter do
       adapter: Commanded.Middleware.Uniqueness.Adapter.Cachex,
       # ttl: 60 minutes in seconds
       ttl: 60 * 60,
-      default_partition: :command
+      use_command_as_partition: true
+
+  where:
+    - `:adapter` is an Uniqueness adapter implemented `Commanded.Middleware.Uniqueness.Adapter` behavior,
+    - `:ttl` is claimed value time-to-live,
+    - `:use_command_as_partition` should be set to use each command module name as partition. If neither this nor
+      `:partition` option defined then `Commanded.Middleware.Uniqueness` value used as a partition name.
   """
 
   @doc """
@@ -17,26 +23,49 @@ defmodule Commanded.Middleware.Uniqueness.Adapter do
   @callback child_spec() :: Supervisor.child_spec()
 
   @doc """
-  Claims an {id, value, owner, partition} or report that this combination has already been claimed.
+  Claims an `key`, `value`, `owner`, `partition` set
+  or report that this combination has already been claimed.
 
-  If an {id, new_value, owner, partition} has to be claimed and old value for the owner exists it
-   releases first.
+  If an `key`, `value`, `owner`, `partition` set has to be claimed
+  and an old value for the given owner exists it releases first.
   """
-  @callback claim(id :: term, value :: term, owner :: term, partition :: term) ::
+  @callback claim(key :: term, value :: term, owner :: term, partition :: term) ::
               :ok | {:error, :already_exists} | {:error, :unknown_error}
 
   @doc """
-  Releases a value record via {id, value, owner, partition}
+  Claims an `key`, `value`, `owner`, `partition` set
+  or report that this combination has already been claimed.
   """
-  @callback release(id :: term, value :: term, owner :: term, partition :: term) ::
+  @callback claim(key :: term, value :: term, partition :: term) ::
+              :ok | {:error, :already_exists} | {:error, :unknown_error}
+
+  @doc """
+  Releases a value record via `key`, `value`, `owner`, `partition` set
+  """
+  @callback release(key :: term, value :: term, owner :: term, partition :: term) ::
               :ok | {:error, :claimed_by_another_owner} | {:error, :unknown_error}
 
   @doc """
-  Releases a value record via {id, owner, partition}
+  Releases a value record via `key`, `owner`, `partition` set
   """
-  @callback release(id :: term, owner :: term, partition :: term) ::
+  @callback release_by_owner(key :: term, owner :: term, partition :: term) ::
               :ok | {:error, :unknown_error}
 
+  @doc """
+  Releases a value record via `key`, `value`, `partition` set
+  """
+  @callback release_by_value(key :: term, value :: term, partition :: term) ::
+              :ok | {:error, :unknown_error}
+
+  ###
+  ###
+  ### Functions
+  ###
+  ###
+
+  @doc """
+  Returns the current adapter or `nil`
+  """
   @spec get :: :atom | nil
   def get do
     adapter()
