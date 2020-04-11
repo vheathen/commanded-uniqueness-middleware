@@ -22,6 +22,8 @@ defmodule Commanded.Middleware.Uniqueness do
     `:partition` - use to set custom partition name
     `:no_owner` - if true then ignore owner and check `field_name` - `field_value` pair uniqueness
     in a `partition` scope. `release_by_value/3` must be used to release key-value pair in such case.
+
+    `:no_owner` option has sense when it is necessary to ensure uniquenesses in embedded structs.
     """
     def unique(command)
   end
@@ -38,10 +40,10 @@ defmodule Commanded.Middleware.Uniqueness do
   end
 
   @doc """
-  Claims an `key`, `value`, `owner`, `partition` set
+  Claims a `key`, `value`, `owner`, `partition` set
   or reports that this combination has already been claimed.
 
-  If an `key`, `value`, `owner`, `partition` set has to be claimed
+  If a `key`, `value`, `owner`, `partition` set has to be claimed
   and an old value for the given owner exists it releases first.
 
   If `partition` is ommited then default partition used.
@@ -59,7 +61,7 @@ defmodule Commanded.Middleware.Uniqueness do
   end
 
   @doc """
-  Claims an `key`, `value`, `partition` set
+  Claims a `key`, `value`, `partition` set
   or reports that this combination has already been claimed.
 
   If `partition` is ommited then default partition used.
@@ -94,10 +96,10 @@ defmodule Commanded.Middleware.Uniqueness do
   @doc """
   Releases a value record via `key`, `owner`, `partition` set
   """
-  @callback release_by_owner(key :: term, owner :: term, partition :: term) ::
-              :ok
-              | {:error, :unknown_error}
-              | {:error, :no_adapter}
+  @spec release_by_owner(key :: term, owner :: term, partition :: term) ::
+          :ok
+          | {:error, :unknown_error}
+          | {:error, :no_adapter}
   def release_by_owner(key, owner, partition \\ @default_partition) do
     case get_adapter() do
       nil -> {:error, :no_adapter}
@@ -108,10 +110,10 @@ defmodule Commanded.Middleware.Uniqueness do
   @doc """
   Releases a value record via `key`, `value`, `partition` set
   """
-  @callback release_by_value(key :: term, value :: term, partition :: term) ::
-              :ok
-              | {:error, :unknown_error}
-              | {:error, :no_adapter}
+  @spec release_by_value(key :: term, value :: term, partition :: term) ::
+          :ok
+          | {:error, :unknown_error}
+          | {:error, :no_adapter}
   def release_by_value(key, value, partition \\ @default_partition) do
     case get_adapter() do
       nil -> {:error, :no_adapter}
@@ -125,6 +127,7 @@ defmodule Commanded.Middleware.Uniqueness do
 
   import Pipeline
 
+  @doc false
   def before_dispatch(%Pipeline{command: command} = pipeline) do
     case ensure_uniqueness(command) do
       :ok ->
@@ -137,7 +140,10 @@ defmodule Commanded.Middleware.Uniqueness do
     end
   end
 
+  @doc false
   def after_dispatch(pipeline), do: pipeline
+
+  @doc false
   def after_failure(pipeline), do: pipeline
 
   defp ensure_uniqueness(command) do

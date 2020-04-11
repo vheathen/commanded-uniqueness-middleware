@@ -1,6 +1,6 @@
 defmodule Commanded.Middleware.Uniqueness.Adapter do
   @moduledoc """
-  Module intended to provide API behaviour to ensure short-term value uniqueness.
+  Provides uniqueness cache adapter behaviour.
 
   Define options in config/config.exs as:
 
