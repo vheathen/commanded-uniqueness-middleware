@@ -24,7 +24,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter do
 
   @doc """
   Claims an `key`, `value`, `owner`, `partition` set
-  or report that this combination has already been claimed.
+  or reports that this combination has already been claimed.
 
   If an `key`, `value`, `owner`, `partition` set has to be claimed
   and an old value for the given owner exists it releases first.
@@ -33,8 +33,8 @@ defmodule Commanded.Middleware.Uniqueness.Adapter do
               :ok | {:error, :already_exists} | {:error, :unknown_error}
 
   @doc """
-  Claims an `key`, `value`, `owner`, `partition` set
-  or report that this combination has already been claimed.
+  Claims an `key`, `value`, `partition` set
+  or reports that this combination has already been claimed.
   """
   @callback claim(key :: term, value :: term, partition :: term) ::
               :ok | {:error, :already_exists} | {:error, :unknown_error}

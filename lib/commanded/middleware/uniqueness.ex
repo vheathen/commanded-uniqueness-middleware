@@ -30,16 +30,100 @@ defmodule Commanded.Middleware.Uniqueness do
     def unique(_command), do: []
   end
 
-  alias Commanded.Middleware.Pipeline
-
-  import Pipeline
-
   @doc """
   Returns default parition which is by default @Commanded.Middleware.Uniqueness
   """
   def default_partition do
     @default_partition
   end
+
+  @doc """
+  Claims an `key`, `value`, `owner`, `partition` set
+  or reports that this combination has already been claimed.
+
+  If an `key`, `value`, `owner`, `partition` set has to be claimed
+  and an old value for the given owner exists it releases first.
+
+  If `partition` is ommited then default partition used.
+  """
+  @spec claim(key :: term, value :: term, owner :: term, partition :: term) ::
+          :ok
+          | {:error, :already_exists}
+          | {:error, :unknown_error}
+          | {:error, :no_adapter}
+  def claim(key, value, owner, partition \\ @default_partition) do
+    case get_adapter() do
+      nil -> {:error, :no_adapter}
+      adapter -> adapter.claim(key, value, owner, partition)
+    end
+  end
+
+  @doc """
+  Claims an `key`, `value`, `partition` set
+  or reports that this combination has already been claimed.
+
+  If `partition` is ommited then default partition used.
+  """
+  @spec claim_without_owner(key :: term, value :: term, partition :: term) ::
+          :ok
+          | {:error, :already_exists}
+          | {:error, :unknown_error}
+          | {:error, :no_adapter}
+  def claim_without_owner(key, value, partition \\ @default_partition) do
+    case get_adapter() do
+      nil -> {:error, :no_adapter}
+      adapter -> adapter.claim(key, value, partition)
+    end
+  end
+
+  @doc """
+  Releases a value record via `key`, `value`, `owner`, `partition` set
+  """
+  @spec release(key :: term, value :: term, owner :: term, partition :: term) ::
+          :ok
+          | {:error, :claimed_by_another_owner}
+          | {:error, :unknown_error}
+          | {:error, :no_adapter}
+  def release(key, value, owner, partition \\ @default_partition) do
+    case get_adapter() do
+      nil -> {:error, :no_adapter}
+      adapter -> adapter.release(key, value, owner, partition)
+    end
+  end
+
+  @doc """
+  Releases a value record via `key`, `owner`, `partition` set
+  """
+  @callback release_by_owner(key :: term, owner :: term, partition :: term) ::
+              :ok
+              | {:error, :unknown_error}
+              | {:error, :no_adapter}
+  def release_by_owner(key, owner, partition \\ @default_partition) do
+    case get_adapter() do
+      nil -> {:error, :no_adapter}
+      adapter -> adapter.release_by_owner(key, owner, partition)
+    end
+  end
+
+  @doc """
+  Releases a value record via `key`, `value`, `partition` set
+  """
+  @callback release_by_value(key :: term, value :: term, partition :: term) ::
+              :ok
+              | {:error, :unknown_error}
+              | {:error, :no_adapter}
+  def release_by_value(key, value, partition \\ @default_partition) do
+    case get_adapter() do
+      nil -> {:error, :no_adapter}
+      adapter -> adapter.release_by_value(key, value, partition)
+    end
+  end
+
+  ### Pipeline itself
+
+  alias Commanded.Middleware.Pipeline
+
+  import Pipeline
 
   def before_dispatch(%Pipeline{command: command} = pipeline) do
     case ensure_uniqueness(command) do
@@ -81,7 +165,7 @@ defmodule Commanded.Middleware.Uniqueness do
     label = get_label(record)
 
     {errors, to_release} =
-      case claim(record, command, adapter) do
+      case claim_value(record, command, adapter) do
         {key, value, owner, partition} ->
           to_release = [{key, value, owner, partition} | to_release]
 
@@ -105,7 +189,7 @@ defmodule Commanded.Middleware.Uniqueness do
     ensure_uniqueness([], command, adapter, errors, [])
   end
 
-  defp claim({fields, _, owner, opts}, command, adapter)
+  defp claim_value({fields, _, owner, opts}, command, adapter)
        when is_list(fields) do
     value =
       fields
@@ -118,10 +202,10 @@ defmodule Commanded.Middleware.Uniqueness do
     key = Module.concat(fields)
     command = %{key => value}
     entity = {key, "", owner, opts}
-    claim(entity, command, adapter)
+    claim_value(entity, command, adapter)
   end
 
-  defp claim({field_name, _, owner, opts}, command, adapter)
+  defp claim_value({field_name, _, owner, opts}, command, adapter)
        when is_atom(field_name) do
     ignore_case = Keyword.get(opts, :ignore_case)
     value = get_field_value(command, field_name, ignore_case)
@@ -149,7 +233,7 @@ defmodule Commanded.Middleware.Uniqueness do
             {field_name, value, owner, partition}
 
           _ ->
-            adapter.release(field_name, value, owner, partition)
+            release({field_name, value, owner, partition}, adapter)
             {:error, :external_check_failed}
         end
 

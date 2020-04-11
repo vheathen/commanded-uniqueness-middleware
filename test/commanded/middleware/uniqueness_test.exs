@@ -41,6 +41,252 @@ defmodule Commanded.Middleware.UniquenessTest do
     end
   end
 
+  describe "public API" do
+    setup do
+      app_settings = Application.get_all_env(:commanded_uniqueness_middleware)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        Commanded.Middleware.Uniqueness.TestAdapter
+      )
+
+      on_exit(fn ->
+        Application.delete_env(:commanded_uniqueness_middleware, :adapter)
+        Application.put_all_env(commanded_uniqueness_middleware: app_settings)
+      end)
+    end
+
+    test "claim_without_owner/2" do
+      assert :ok == Uniqueness.claim_without_owner(:name, :a_new_value)
+
+      assert {:error, :already_exists} ==
+               Uniqueness.claim_without_owner(:name, :claimed_value)
+
+      assert {:error, :unknown_error} ==
+               Uniqueness.claim_without_owner(:name, :error)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.claim_without_owner(:name, :no_adapter)
+    end
+
+    test "claim_without_owner/3" do
+      assert :ok == Uniqueness.claim_without_owner(:name, :a_new_value, :non_default_part)
+
+      assert :ok ==
+               Uniqueness.claim_without_owner(
+                 :name,
+                 :a_new_value,
+                 Commanded.Middleware.Uniqueness
+               )
+
+      assert {:error, :already_exists} ==
+               Uniqueness.claim_without_owner(
+                 :name,
+                 :claimed_value,
+                 Commanded.Middleware.Uniqueness
+               )
+
+      assert {:error, :unknown_error} ==
+               Uniqueness.claim_without_owner(:name, :error, Commanded.Middleware.Uniqueness)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.claim_without_owner(:name, :no_adapter)
+    end
+
+    test "claim/3" do
+      assert :ok == Uniqueness.claim(:name, :a_new_value, :an_id)
+      assert :ok == Uniqueness.claim(:name, :a_new_value, :an_id)
+      assert {:error, :already_exists} == Uniqueness.claim(:name, :claimed_value, :an_id)
+      assert {:error, :unknown_error} == Uniqueness.claim(:name, :error, :an_id)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.claim(:name, :no_adapter, :an_id)
+    end
+
+    test "claim/4" do
+      assert :ok == Uniqueness.claim(:name, :a_new_value, :an_id, :non_default_part)
+      assert :ok == Uniqueness.claim(:name, :a_new_value, :an_id, Commanded.Middleware.Uniqueness)
+
+      assert {:error, :already_exists} ==
+               Uniqueness.claim(:name, :claimed_value, :an_id, Commanded.Middleware.Uniqueness)
+
+      assert {:error, :unknown_error} ==
+               Uniqueness.claim(:name, :error, :an_id, Commanded.Middleware.Uniqueness)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.claim(:name, :no_adapter, :an_id, Commanded.Middleware.Uniqueness)
+    end
+
+    test "release/3" do
+      assert :ok == Uniqueness.release(:name, :a_claimed_value, :an_id)
+
+      assert :ok ==
+               Uniqueness.release(
+                 :name,
+                 :a_claimed_value,
+                 :an_id,
+                 Commanded.Middleware.Uniqueness
+               )
+
+      assert {:error, :claimed_by_another_owner} ==
+               Uniqueness.release(
+                 :name,
+                 :a_claimed_value,
+                 :an_another_id,
+                 Commanded.Middleware.Uniqueness
+               )
+
+      assert {:error, :unknown_error} ==
+               Uniqueness.release(:name, :error, :an_id)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.release(:name, :no_adapter, :an_id)
+    end
+
+    test "release/4" do
+      assert :ok == Uniqueness.release(:name, :a_claimed_value, :an_id, :non_default_part)
+
+      assert :ok ==
+               Uniqueness.release(
+                 :name,
+                 :a_claimed_value,
+                 :an_id,
+                 Commanded.Middleware.Uniqueness
+               )
+
+      assert {:error, :claimed_by_another_owner} ==
+               Uniqueness.release(
+                 :name,
+                 :a_claimed_value,
+                 :an_another_id,
+                 Commanded.Middleware.Uniqueness
+               )
+
+      assert {:error, :unknown_error} ==
+               Uniqueness.release(:name, :error, :an_id, Commanded.Middleware.Uniqueness)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.release(:name, :no_adapter, :an_id, Commanded.Middleware.Uniqueness)
+    end
+
+    test "release_by_owner/2" do
+      assert :ok == Uniqueness.release_by_owner(:name, :an_id)
+      assert :ok == Uniqueness.release_by_owner(:name, :an_id)
+
+      assert {:error, :unknown_error} ==
+               Uniqueness.release_by_owner(:name, :error)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.release_by_owner(:name, :no_adapter)
+    end
+
+    test "release_by_owner/3" do
+      assert :ok == Uniqueness.release_by_owner(:name, :an_id, :non_default_part)
+      assert :ok == Uniqueness.release_by_owner(:name, :an_id, Commanded.Middleware.Uniqueness)
+
+      assert {:error, :unknown_error} ==
+               Uniqueness.release_by_owner(:name, :error, Commanded.Middleware.Uniqueness)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.release_by_owner(:name, :no_adapter, Commanded.Middleware.Uniqueness)
+    end
+
+    test "release_by_value/2" do
+      assert :ok == Uniqueness.release_by_value(:name, :a_claimed_value)
+
+      assert :ok ==
+               Uniqueness.release_by_value(
+                 :name,
+                 :a_claimed_value,
+                 Commanded.Middleware.Uniqueness
+               )
+
+      assert {:error, :unknown_error} ==
+               Uniqueness.release_by_value(:name, :error)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.release_by_value(:name, :no_adapter)
+    end
+
+    test "release_by_value/3" do
+      assert :ok == Uniqueness.release_by_value(:name, :a_claimed_value, :non_default_part)
+
+      assert :ok ==
+               Uniqueness.release_by_value(
+                 :name,
+                 :a_claimed_value,
+                 Commanded.Middleware.Uniqueness
+               )
+
+      assert {:error, :unknown_error} ==
+               Uniqueness.release_by_value(:name, :error, Commanded.Middleware.Uniqueness)
+
+      Application.put_env(
+        :commanded_uniqueness_middleware,
+        :adapter,
+        nil
+      )
+
+      assert {:error, :no_adapter} ==
+               Uniqueness.release_by_value(:name, :no_adapter, Commanded.Middleware.Uniqueness)
+    end
+  end
+
   describe "Uniqueness middleware, TestCommandSimple should" do
     @describetag :unit
 
