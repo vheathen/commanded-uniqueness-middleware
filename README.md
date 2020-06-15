@@ -4,7 +4,7 @@ A [Commanded](https://github.com/commanded/commanded) [middleware](https://hexdo
 
 Based on the [Ben Smith](https://github.com/slashdotdash)'s idea described in his "Building Conduit" [book](https://leanpub.com/buildingconduit).
 
-[Please check the latest published CommandedMiddlewareUniqueness release documentation on Hex](https://hexdocs.pm/commanded-uniqueness-middleware/).
+[Please check the latest published CommandedMiddlewareUniqueness release documentation on Hex](https://hexdocs.pm/commanded_uniqueness_middleware/).
 
 ## Installation
 
