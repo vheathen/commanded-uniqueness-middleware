@@ -30,10 +30,11 @@ Define options in config/config.exs as:
     use_command_as_partition: false
 ```
 
-  where:
-    - `:adapter` is an Uniqueness adapter implemented `Commanded.Middleware.Uniqueness.Adapter` behavior,
-    - `:ttl` is claimed value time-to-live,
-    - `:use_command_as_partition` should be set to true to use each command module name as partition. Use with  caution! If neither this nor Unique protocol `:partition` option defined then `Commanded.Middleware.Uniqueness` value used as a partition name.
+where:
+
+- `:adapter` is an Uniqueness adapter implemented `Commanded.Middleware.Uniqueness.Adapter` behavior,
+- `:ttl` is claimed value time-to-live,
+- `:use_command_as_partition` should be set to true to use each command module name as partition. Use with  caution! If neither this nor Unique protocol `:partition` option defined then `Commanded.Middleware.Uniqueness` value used as a partition name.
 
 ## Adapters
 As of now the only adapter exists is a Cachex based one.
