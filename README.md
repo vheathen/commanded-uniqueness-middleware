@@ -30,17 +30,17 @@ Define options in config/config.exs as:
     use_command_as_partition: false
 ```
 
-  where:
-    - `:adapter` is an Uniqueness adapter implemented `Commanded.Middleware.Uniqueness.Adapter` behavior,
-    - `:ttl` is claimed value time-to-live,
-    - `:use_command_as_partition` should be set to true to use each command module name as partition. Use with  caution! If neither this nor Unique protocol `:partition` option defined then `Commanded.Middleware.Uniqueness` value used as a partition name.
+where:
+  - `:adapter` is an Uniqueness adapter implemented `Commanded.Middleware.Uniqueness.Adapter` behavior,
+  - `:ttl` is claimed value time-to-live,
+  - `:use_command_as_partition` should be set to true to use each command module name as partition. Use with  caution! If neither this nor Unique protocol `:partition` option defined then `Commanded.Middleware.Uniqueness` value used as a partition name.
 
 ## Adapters
 As of now the only adapter exists is a Cachex based one.
 Any adapter implementing `Commanded.Middleware.Uniqueness.Adapter` behavior can be used.
 
 ## Usage
-Imagine you have an aggregate with a unique field value requirement, for example, it might be a `:username` field. You've got a new user and issue a `RegisterUser` command with `SomeCoolUsername` `:name` field value. The command successfully went through all checks and spawn a UserRegistered event but this event haven't been projected yet. At this very moment an another user wants to register with the same name, and as the previous event isn't projected you have no information that this user name 
+Imagine you have an aggregate with a unique field value requirement, for example, it might be a `:username` field. You've got a new user and issue a `RegisterUser` command with `SomeCoolUsername` `:name` field value. The command successfully went through all checks and spawned a UserRegistered event but this event hasn't been projected yet. At this very moment an another user wants to register with the same name, and as the previous event isn't projected you have no information that this user name 
 has been taken.
 
 You can use `Commanded.Middleware.Uniqueness` to ensure that your system will not get into a conflict state in between two commands.
