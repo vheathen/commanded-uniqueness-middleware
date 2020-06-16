@@ -60,7 +60,7 @@ defmodule Commanded.Middleware.Uniqueness.MixProject do
   defp docs do
     [
       main: "getting-started",
-      canonical: "http://hexdocs.pm/commanded-uniqueness-middleware",
+      canonical: "http://hexdocs.pm/commanded_uniqueness_middleware",
       source_ref: "v#{@version}",
       extra_section: "GUIDES",
       extras: [
@@ -88,7 +88,7 @@ defmodule Commanded.Middleware.Uniqueness.MixProject do
       licenses: ["MIT"],
       links: %{
         "GitHub" => "https://github.com/vheathen/commanded-uniqueness-middleware",
-        "Docs" => "http://hexdocs.pm/commanded-uniqueness-middleware"
+        "Docs" => "http://hexdocs.pm/commanded_uniqueness_middleware"
       }
     ]
   end
