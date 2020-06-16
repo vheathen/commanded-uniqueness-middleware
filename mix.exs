@@ -35,7 +35,7 @@ defmodule Commanded.Middleware.Uniqueness.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:commanded, "~> 1.0.0", runtime: false},
+      {:commanded, ">= 1.0.0 and < 1.2.0", runtime: false},
       {:cachex, "~> 3.2.0", optional: true},
       {:mix_test_watch, "~> 1.0", only: :dev},
       {:faker, "~> 0.13", only: [:test, :dev]},
