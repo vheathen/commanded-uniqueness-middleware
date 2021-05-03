@@ -7,7 +7,7 @@ defmodule Commanded.Middleware.Uniqueness.MixProject do
     [
       app: :commanded_uniqueness_middleware,
       version: @version,
-      elixir: "~> 1.7",
+      elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -38,7 +38,7 @@ defmodule Commanded.Middleware.Uniqueness.MixProject do
       {:cachex, ">= 3.2.0 and < 3.4.0", optional: true},
       {:commanded, ">= 1.0.0 and < 1.3.0", runtime: false},
       {:mix_test_watch, "~> 1.0", only: :dev},
-      {:faker, "~> 0.13", only: [:test, :dev]},
+      {:faker, "~> 0.16", only: [:test, :dev]},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
