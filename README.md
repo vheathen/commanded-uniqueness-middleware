@@ -49,8 +49,8 @@ where:
 
 ## Adapters
 Two adapters currently exist:
-- Based on Nebula `Commanded.Middleware.Uniqueness.Adapter.Cachex`
-- Based on Cachex `Commanded.Middleware.Uniqueness.Adapter.Nebulex`
+- Based on Cachex `Commanded.Middleware.Uniqueness.Adapter.Cachex`
+- Based on Nebula `Commanded.Middleware.Uniqueness.Adapter.Nebulex`
 
 Any adapter implementing `Commanded.Middleware.Uniqueness.Adapter` behavior can be used.
 
