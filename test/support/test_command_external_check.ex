@@ -1,4 +1,6 @@
 defmodule TestCommandExternalCheck do
+  @moduledoc false
+
   defstruct [
     :id,
     :name,

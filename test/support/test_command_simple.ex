@@ -1,4 +1,6 @@
 defmodule TestCommandSimple do
+  @moduledoc false
+
   defstruct [
     :id,
     :name

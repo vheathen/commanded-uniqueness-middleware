@@ -1,4 +1,6 @@
 defmodule TestCommandMulti do
+  @moduledoc false
+  
   defstruct [
     :id,
     :name,

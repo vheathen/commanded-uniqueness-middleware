@@ -1,4 +1,6 @@
 defmodule TestCommandSimpleLabel do
+  @moduledoc false
+
   defstruct [
     :id,
     :name

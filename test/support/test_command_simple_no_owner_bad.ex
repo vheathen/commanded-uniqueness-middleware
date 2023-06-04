@@ -1,4 +1,6 @@
 defmodule TestCommandSimpleNoOwnerBad do
+  @moduledoc false
+
   defstruct [
     :id,
     :name

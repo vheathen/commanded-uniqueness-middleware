@@ -1,4 +1,6 @@
 defmodule TestCommandSimpleCaseInsensitive do
+  @moduledoc false
+
   defstruct [
     :id,
     :name

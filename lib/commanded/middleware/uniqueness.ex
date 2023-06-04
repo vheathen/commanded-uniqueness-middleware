@@ -152,10 +152,7 @@ defmodule Commanded.Middleware.Uniqueness do
 
   defp ensure_uniqueness(_command, nil) do
     require Logger
-
-    Logger.debug("No unique cache adapter defined in config! Assume the value is unique.",
-      label: "#{__MODULE__}"
-    )
+    Logger.debug("#{__MODULE__}: No unique cache adapter defined in config! Assume the value is unique.")
 
     :ok
   end

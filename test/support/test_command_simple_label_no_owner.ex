@@ -1,4 +1,6 @@
 defmodule TestCommandSimpleLabelNoOwner do
+  @moduledoc false
+
   defstruct [
     :id,
     :name

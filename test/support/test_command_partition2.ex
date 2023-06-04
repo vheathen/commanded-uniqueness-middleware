@@ -1,4 +1,6 @@
 defmodule TestCommandPartition2 do
+  @moduledoc false
+
   defstruct [
     :id,
     :name

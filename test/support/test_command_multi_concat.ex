@@ -1,4 +1,6 @@
 defmodule TestCommandMultiConcat do
+  @moduledoc false
+
   defstruct [
     :id,
     :name,

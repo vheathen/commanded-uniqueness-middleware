@@ -1,4 +1,5 @@
 defmodule Commanded.Middleware.Uniqueness.TestAdapter do
+  @moduledoc false
   @behaviour Commanded.Middleware.Uniqueness.Adapter
 
   def child_spec do
