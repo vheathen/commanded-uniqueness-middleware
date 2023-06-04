@@ -13,12 +13,9 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
 
     case Cachex.get(@cachex_adapter, :anything) do
       {:error, :no_cache} ->
-        Application.put_all_env(
-          commanded_uniqueness_middleware: [adapter: @cachex_adapter, ttl: 1_000]
-        )
+        Application.put_all_env(commanded_uniqueness_middleware: [adapter: @cachex_adapter, ttl: 1_000])
 
-        {:ok, _} =
-          Cachex.start_link(@cachex_adapter, expiration: Cachex.Spec.expiration(default: 1_000))
+        {:ok, _} = Cachex.start_link(@cachex_adapter, expiration: Cachex.Spec.expiration(default: 1_000))
 
       {:ok, _} ->
         Application.put_env(:commanded_uniqueness_middleware, :ttl, 1_000)
@@ -40,7 +37,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
 
     key = :field_name
     value = Faker.Lorem.sentence()
-    owner = UUID.uuid4()
+    owner = Faker.UUID.v4()
     partition = Faker.String.base64()
 
     assert :ok == @cachex_adapter.claim(key, value, owner, partition)
@@ -53,9 +50,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
       assert @cachex_adapter.child_spec ==
                %{
                  id: @cachex_adapter,
-                 start:
-                   {Cachex, :start,
-                    [@cachex_adapter, [expiration: Cachex.Spec.expiration(default: 1_000)]]}
+                 start: {Cachex, :start, [@cachex_adapter, [expiration: Cachex.Spec.expiration(default: 1_000)]]}
                }
     end
   end
@@ -92,7 +87,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
            owner: owner,
            partition: partition
          } do
-      other = UUID.uuid4()
+      other = Faker.UUID.v4()
 
       assert {:error, :already_exists} ==
                @cachex_adapter.claim(key, value, other, partition)
@@ -169,7 +164,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
     test "should return :ok if no given value exists", %{partition: partition} do
       key = :other_field_name
       value = Faker.Lorem.sentence()
-      owner = UUID.uuid4()
+      owner = Faker.UUID.v4()
 
       assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
       assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
@@ -187,7 +182,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
            owner: owner,
            partition: partition
          } do
-      other = UUID.uuid4()
+      other = Faker.UUID.v4()
 
       assert {:error, :claimed_by_another_owner} ==
                @cachex_adapter.release(key, value, other, partition)
@@ -213,7 +208,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
 
     test "should return :ok if no given value exists", %{partition: partition} do
       key = :other_field_name
-      owner = UUID.uuid4()
+      owner = Faker.UUID.v4()
 
       assert nil == Cachex.get!(@cachex_adapter, {partition, @by_owner_key, key, owner})
 
@@ -255,7 +250,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
 
     test "should return :ok if no given value claimed", %{partition: partition} do
       key = :other_field_name
-      value = UUID.uuid4()
+      value = Faker.UUID.v4()
 
       assert nil == Cachex.get!(@cachex_adapter, {partition, @by_value_key, key, value})
 
