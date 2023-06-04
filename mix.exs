@@ -37,7 +37,7 @@ defmodule Commanded.Middleware.Uniqueness.MixProject do
     [
       {:cachex, ">= 3.2.0 and < 3.7.0", optional: true},
       {:commanded, ">= 1.0.0 and < 1.5.0", runtime: false},
-      {:mix_test_watch, "~> 1.0", only: :dev},
+      {:mix_test_watch, "~> 1.1", only: :dev},
       {:faker, "~> 0.17", only: [:test, :dev]},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
