@@ -1,5 +1,7 @@
 defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
-  use ExUnit.Case
+  @moduledoc false
+
+  use ExUnit.Case, async: false
 
   require Cachex.Spec
 
@@ -14,8 +16,7 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
     case Cachex.get(@cachex_adapter, :anything) do
       {:error, :no_cache} ->
         Application.put_all_env(commanded_uniqueness_middleware: [adapter: @cachex_adapter, ttl: 1_000])
-
-        {:ok, _} = Cachex.start_link(@cachex_adapter, expiration: Cachex.Spec.expiration(default: 1_000))
+        {:ok, _cache_pid} = Cachex.start_link(@cachex_adapter, expiration: Cachex.Spec.expiration(default: 1_000))
 
       {:ok, _} ->
         Application.put_env(:commanded_uniqueness_middleware, :ttl, 1_000)
@@ -23,7 +24,6 @@ defmodule Commanded.Middleware.Uniqueness.Adapter.CachexTest do
 
     on_exit(fn ->
       Enum.each([:adapter, :ttl], &Application.delete_env(:commanded_uniqueness_middleware, &1))
-
       Application.put_all_env(commanded_uniqueness_middleware: app_settings)
     end)
 

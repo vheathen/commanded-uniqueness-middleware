@@ -40,7 +40,9 @@ defmodule Commanded.Middleware.Uniqueness.MixProject do
       {:mix_test_watch, "~> 1.1", only: :dev},
       {:faker, "~> 0.17", only: [:test, :dev]},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:nebulex, "~> 2.5", optional: true},
+      {:shards, "~> 1.0", optional: true}
     ]
   end
 

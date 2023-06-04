@@ -1,3 +1,5 @@
 Cachex.Application.start(:normal, [])
+Application.ensure_all_started(:telemetry)
+Application.ensure_all_started(:nebulex)
 Application.ensure_all_started(:commanded_uniqueness_middleware)
 ExUnit.start()
