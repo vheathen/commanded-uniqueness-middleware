@@ -30,15 +30,39 @@ Define options in config/config.exs as:
     use_command_as_partition: false
 ```
 
-where:
+or
 
-- `:adapter` is an Uniqueness adapter implemented `Commanded.Middleware.Uniqueness.Adapter` behavior,
-- `:ttl` is claimed value time-to-live,
-- `:use_command_as_partition` should be set to true to use each command module name as partition. Use with  caution! If neither this nor Unique protocol `:partition` option defined then `Commanded.Middleware.Uniqueness` value used as a partition name.
+```elixir
+  config :commanded_uniqueness_middleware,
+    adapter: Commanded.Middleware.Uniqueness.Adapter.Nebulex,
+    nebulex_cache: YourApp.Nebulex.Uniqueness.Cache,
+    # ttl: 60 minutes in seconds
+    ttl: 60 * 60,
+    use_command_as_partition: false
+```
+
+where:
+  - `:adapter` is an Uniqueness adapter implemented `Commanded.Middleware.Uniqueness.Adapter` behavior,
+  - `:nebulex_cache` is a module with Nebulex.Cache behaviour implemented in your application,
+  - `:ttl` is claimed value time-to-live,
+  - `:use_command_as_partition` should be set to true to use each command module name as partition. Use with  caution! If neither this nor Unique protocol `:partition` option defined then `Commanded.Middleware.Uniqueness` value used as a partition name.
 
 ## Adapters
-As of now the only adapter exists is a Cachex based one.
+Two adapters currently exist:
+- Based on Nebula `Commanded.Middleware.Uniqueness.Adapter.Cachex`
+- Based on Cachex `Commanded.Middleware.Uniqueness.Adapter.Nebulex`
+
 Any adapter implementing `Commanded.Middleware.Uniqueness.Adapter` behavior can be used.
+
+### Nebulex
+Nebulex adapter requires a custom Nebulex cache module. Please create it inside your application like:
+
+```elixir
+  mix nbx.gen.cache -c YourApp.Nebulex.Uniqueness.Cache
+```
+
+You can configure Nebulex caching strategy in the your application config and/or in the cache module itself.
+For details please check [Nebulex documentation](https://hexdocs.pm/nebulex/getting-started.html#adding-nebulex-to-an-application)
 
 ## Usage
 Imagine you have an aggregate with a unique field value requirement, for example, it might be a `:username` field. You've got a new user and issue a `RegisterUser` command with `SomeCoolUsername` `:name` field value. The command successfully went through all checks and spawn a UserRegistered event but this event haven't been projected yet. At this very moment an another user wants to register with the same name, and as the previous event isn't projected you have no information that this user name 
